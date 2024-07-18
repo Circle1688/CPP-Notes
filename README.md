@@ -1263,4 +1263,692 @@ int main() {
 
 ## 内存模型和名称空间
 
-### 变量的作用域
+### 名称空间
+
+防止名字冲突
+
+```c++
+namespace A{
+    int a;
+    double b;
+}
+
+namespace B{
+    int a;
+    double b;
+}
+```
+
+不同名称空间里面的名字可以相同
+
+```c++
+A::a = 9;
+B::a = 2;
+```
+
+
+
+- **using声明**
+
+将该成员加入到当前作用域，在此作用域中引用该成员不需要加名字间名的限定
+
+```c++
+using A::a;
+cin >> a;
+```
+
+
+
+- **using编译指令**
+
+```c++
+using namespace 名字空间名;
+```
+
+将该名字空间中的成员加入到当前作用域，在此作用域中引用该名字空间的成员不需要加名字空间名的限定
+
+
+
+main函数中可用
+
+```c++
+int main()
+{
+    using namespace A;
+    //main函数中可用
+}
+```
+
+
+
+文件中所有函数可用
+
+```c++
+//文件中所有函数可用
+using namespace A;
+    
+int main()
+{
+    ...
+}
+```
+
+
+
+## 对象和类
+
+### 抽象和类
+
+类和结构的区别
+
+struct默认是公有的，class默认是私有的
+
+
+
+### 对象构造
+
+构造函数可以重载，也可以用缺省值，来实现不同的参数组来构造
+
+可以通过列表初始化
+
+```c++
+class CExample {
+public:
+    int a;
+    float b;
+    const int c;
+    //构造函数初始化列表，可以为常量初始化赋值，在构造函数内，常量不能赋值
+    CExample(): a(0),b(8.8),c(10) {}
+    
+    //构造函数内部赋值
+    CExample()
+    {
+        a=0;
+        b=8.8;
+        c=10;//常量不能这样赋值，会报错，因此在常量初始化时，应该用构造函数初始化列表
+    }
+};
+```
+
+
+
+### const对象
+
+const对象里的值不可修改
+
+```c++
+const 对象名(初始化参数);
+```
+
+**const对象只能调用const成员函数**
+
+
+
+#### const成员函数
+
+const函数格式
+
+```c++
+int getx() const { return x; }
+```
+
+**const成员函数不可修改数据成员**
+
+
+
+**在设计类的时候，不修改数据成员的成员函数都加上const！！！**
+
+
+
+### this指针
+
+每个类对象的普通函数（非静态成员函数）里都有一个隐藏的参数，就是this指针
+
+一般用在返回值时，做链式调用（返回自身）
+
+```c++
+return *this; // 返回*this引用，支持链式调用
+```
+
+
+
+### 类作用域的常量
+
+所有对象共享的常量
+
+
+
+用关键字static
+
+```c++
+class salary {
+    static const int month = 12;
+}
+```
+
+
+
+## 使用类
+
+### 运算符重载
+
+使对象能用运算符操作
+
+例如：类A的对象a1, a2, a3可以执行 a3 = a1 + a3
+
+不能创建新的运算符，只能重载
+
+
+
+operator后面跟着要重载的运算符
+
+如：A类的加法函数原型
+
+```c++
+A operator+(const A &a) const;	//等价于 *this + a
+
+bool operator>(const A &a) const;	//等价于*this > a
+```
+
+编译器中
+
+```c++
+t3 = t1 + t2;
+
+//相当于调用了t1的operator+这个函数，并将t2作为参数
+t3 = t1.operator+(t2);
+```
+
+
+
+### 友元
+
+类的朋友，允许访问私有成员
+
+
+
+使用friend关键字
+
+
+
+#### **友元函数的应用**
+
+主要用于运算符重载
+
+```c++
+class Time
+{
+    friend Time operator+(const Time & t1, const Time & t2);  //友元函数声明
+
+private:
+	int hours;
+	int minutes;
+public:
+	Time();
+	Time(int h,intm=0);
+    
+	void AddMin(int m);
+	void AddHr(int h);
+	void Reset(int h = 0, int m = 0);
+    
+	void Show() const;
+};
+
+Time operator+(const Time &t1, const Time &t2);	//全局的运算符重载函数
+
+
+//因为是友元，因此可以访问私有成员
+Time operator+(const Time &t1, const Time &t2)
+{
+    Time sum;
+	sum.minutes = t1.minutes + t2.minutes;
+	sum.hours = t1.hours + t2.hours + sum.minutes / 60;
+	sum.minutes %= 60;
+	return sum;
+}
+```
+
+这种全局的运算符重载函数，在编译器中
+
+```c++
+t3 = t1 + t2;
+
+//相当于调用了operator+这个全局函数，并将t1, t2作为参数
+t3 = operator+(t1, t2);
+```
+
+
+
+
+
+重载输出运算符
+
+```c++
+#include <iostream>
+
+class Fraction {
+private:
+    int numerator;
+    int denominator;
+
+public:
+    Fraction(int num, int denom) : numerator(num), denominator(denom) {}
+
+    // 友元函数声明
+    friend std::ostream& operator<<(std::ostream& os, const Fraction& f);
+    friend std::istream& operator>>(std::istream& is, Fraction& f);
+
+    // 其他成员函数...
+};
+
+// 输出运算符重载
+std::ostream& operator<<(std::ostream& os, const Fraction& f) {
+    os << f.numerator << "/" << f.denominator;
+    return os;	//这样可以作为左值，调用连续输出
+}
+
+// 输入运算符重载
+std::istream& operator>>(std::istream& is, Fraction& f) {
+    is >> f.numerator >> f.denominator;
+    return is;
+}
+
+int main() {
+    Fraction f1(1, 2);
+    std::cout << "f1: " << f1 << std::endl;  // 使用友元输出运算符
+    std::cin >> f1;                         // 使用友元输入运算符
+    return 0;
+}
+```
+
+
+
+### 运算符重载 - 成员函数或非成员函数
+
+重载成成员函数
+
+```c++
+class Time
+{
+private:
+	int hours
+	int minutes;
+public:
+    Time();
+    Time(int h,int m=0);
+    
+    void AddMin(intm);
+    void AddHr(int h);
+    void Reset(int h = 0, int m = 0);
+    
+    Time operator+(const Time & t) const;
+        
+    void Show() const;
+};
+
+Time t1(3,7), t2(1,20), t3;
+int x = 2;
+
+t3 = t1 + t2; 			// 正确	t3 = t1.operator+(t2);
+
+t3 = 2 + t1;			// 错误	t3 = int.operator+(t1); 这是错误的，int类型里面没有operator+(t1)这个成员函数，因此报错
+
+t3 = x + t1;			// 错误	t3 = int.operator+(t1); 这是错误的，int类型里面没有operator+(t1)这个成员函数，因此报错
+```
+
+重载成成员函数时，只有当第一个运算数是当前类对象时，才能找到重载的函数
+
+
+
+**因此，当第一个运算数不是当前类对象时，不能重载成成员函数**
+
+
+
+重载成全局函数
+
+```c++
+class Time
+{
+    friend Time operator+(const Time & t1, const Time & t2) const;
+private:
+	int hours
+	int minutes;
+public:
+    Time();
+    Time(int h,	int m=0); //重载的构造函数，带缺省参数
+    
+    void AddMin(intm);
+    void AddHr(int h);
+    void Reset(int h = 0, int m = 0);
+        
+    void Show() const;
+};
+
+Time t1(3,7), t2(1,20), t3;
+int x = 2;
+
+t3 = t1 + t2; 			// 正确	t3 = t1.operator+(t2);
+
+t3 = 2 + t1;			// 正确	t3 = operator+(2, t1); 	等价于t3 = operator+(Time(2), t1);	int类型作为Time类的构造函数参数
+
+t3 = x + t1;			// 正确	t3 = operator+(x, t1); 	等价于t3 = operator+(Time(x), t1);	int类型作为Time类的构造函数参数
+```
+
+**建议 operator+ 这样第一个运算数未必是当前类对象的函数，重载成全局函数**
+
+
+
+operator+=
+
+```c++
+class Time
+{
+private:
+	int hours
+	int minutes;
+public:
+    Time();
+    Time(int h,int m=0);
+    
+    void AddMin(intm);
+    void AddHr(int h);
+    void Reset(int h = 0, int m = 0);
+    
+    Time &operator+=(const Time & t);
+        
+    void Show() const;
+};
+
+Time &operator+=(const Time & t)
+{
+    minutes += t.minutes;
+	hours += t.hours + minutes / 60;
+	minutes %= 60;
+	return *this;
+}
+
+Time t1(3,7), t2(1,20), t3;
+int x = 2;
+
+t3 += t1; 			// 正确	t3 = t3.operator+=(t1);
+
+x += t1;			// 错误	int = int.operator+=(t1); 	这是错误的，int类型里面没有operator+=(t1)这个成员函数，因此报错
+```
+
+**像operator+=这样左值一定要是当前类对象，重载成成员函数**
+
+
+
+**总结**
+
+
+
+- **左边第一个运算数必须是当前类对象时，重载成成员函数**
+
+- **当第一个运算数一定不能是当前类对象时，重载成全局函数**
+
+- **当运算数仅仅是用于参数输入，重载成全局函数**
+
+
+
+### 类的类型转换
+
+#### 内置类型到类类型的转换
+
+通过构造函数
+
+只要有带一个参数的构造函数，就能实现参数类型到类类型的转换
+
+```c++
+class Time
+{
+    friend Time operator+(const Time & t1, const Time & t2) const;
+private:
+	int hours
+	int minutes;
+public:
+    Time();
+    Time(int h,	int m=0); //重载的构造函数，带缺省参数
+    
+    void AddMin(intm);
+    void AddHr(int h);
+    void Reset(int h = 0, int m = 0);
+        
+    void Show() const;
+};
+
+Time t1(3,7), t2(1,20), t3;
+int x = 2;
+
+t3 = 5; 				// t3 = Time(5);
+
+t3 = 2 + t1;			// t3 = operator+(2, t1); 	等价于t3 = operator+(Time(2), t1);	int类型作为Time类的构造函数参数
+```
+
+
+
+#### 类类型到其他类类型的转换
+
+通过类型转换函数实现
+
+类型转换函数必须重载成成员函数
+
+
+
+类型转换函数的格式
+
+```c++
+operator 目标类型名() const
+{
+    return (结果为目标类型的表达式)
+}
+```
+
+
+
+示例：Time到int的转换函数定义
+
+```c++
+operator int() const
+{
+    return (int(hours))
+}
+```
+
+
+
+使用：类型转换
+
+```c++
+int x;
+x = t1;
+x = (int)t1;
+```
+
+
+
+## 类和动态内存分配
+
+
+
+### 拷贝构造与赋值运算符重载
+
+**数据成员包含动态变量（例如指针，指针指向的空间是动态的）时，必须定义拷贝构造函数和赋值运算符重载函数！！！**
+
+```c++
+class String {
+    char *data;		//指针之间不能直接拷贝赋值，因此需要重载拷贝构造函数
+    int len;
+public:
+    String(const char *s = "");
+    String(const String& other);	//拷贝构造函数
+    
+    ~String() { delete data;}
+    String &operator=(const String& other);		//赋值运算重载函数（赋值运算只能重载为成员函数）
+    
+    friend String operator+(const String& s1, const String& s2);
+    friend bool operator==(const String& s1, const String& s2);
+    friend ostream operator<<(ostream& os, const String& s);
+}
+```
+
+方法定义
+
+```c++
+String::String(const String &other)
+{
+    len = other.len;
+	data = new char[len+1];
+	for (int i = 0; i < len;++i)
+        data[i] = other.data[i];
+    data[len] = '\0';
+}
+
+String &String::operator=(const String &other)
+{
+    if(this== &other) return*this;	//检查是否是自己赋给自己，最彻底的办法就是检查内存地址是否一致
+    
+    delete data;	//长度不一定相同，因此先释放掉，再重新申请空间
+    
+    len = other.len;
+    data = new char[len+1];
+    for (int i=0;i<len;++i)
+        data[i] = other.data[i];
+    data[len] = '\0';
+    return *this;
+}
+```
+
+
+
+### 静态数据成员
+
+整个类所有对象共享的变量（其他类看不到）
+
+定义方法
+
+成员前加static
+
+静态成员变量不属于对象，而属于类的一部分
+
+静态数据成员属于类，因此定义对象时并不为静态成员分配空间
+
+
+
+类定义文件（.h）中不给初始值，只声明
+
+```c++
+class StaticSample {
+private:
+    static int obj_count;
+}
+```
+
+**静态成员变量在类实现文件（.cpp）中分配空间**
+
+```c++
+#include "StaticSample.h"
+
+int StaticSample::obj_count = 10;	//	在类实现中给初始值
+
+StaticSample::StaticSample()
+{
+    ...
+}
+```
+
+
+
+使用
+
+类名::静态成员变量
+
+对象名.静态成员变量
+
+
+
+### 静态成员函数
+
+专门处理静态数据成员，不能处理其他数据成员的函数
+
+函数原型前加static
+
+
+
+静态成员函数没有this指针
+
+
+
+使用
+
+类名::静态成员函数
+
+对象名.静态成员函数
+
+
+
+### 队列
+
+一种特殊的线性表，插入在表尾，删除在表头
+
+
+
+### 继承
+
+优点：
+
+代码复用
+
+可以重用一个实现不公开的类
+
+
+
+单继承格式
+
+```c++
+struct 派生类名: 派生方法 基类名
+{
+    新增的数据成员和成员函数;
+}
+```
+
+
+
+派生方法
+
+public：基类的公有成员成为派生类的公有成员；派生类的方法不能访问基类私有成员
+
+
+
+#### 构造函数
+
+类定义
+
+```c++
+class RatedPlayer : public TableTennisPlayer
+{
+private:
+    unsigned int rating;
+public:
+    //构造函数
+    RatedPlayer(unsigned int r=0, const string& fn="none", const string& ln="none", bool ht=false);
+    RatedPlayer(unsigned int r, const TableTennisPlayer& tp);
+}
+```
+
+类实现
+
+```c++
+//构造函数列表初始化
+
+//用派生类的参数构造基类
+RatedPlayer::RatedPlayer(unsigned int r, const string& fn, const string& ln, bool ht) : TableTennisPlayer(fn, ln, ht)
+{
+    rating = r;
+}
+
+//拷贝g
+RatedPlayer::RatedPlayer(unsigned int r, const TableTennisPlayer& tp) : TableTennisPlayer(tp), rating(r)
+{
+}
+```
