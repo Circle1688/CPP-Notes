@@ -1893,6 +1893,10 @@ StaticSample::StaticSample()
 
 
 
+## 类继承
+
+
+
 ### 继承
 
 优点：
@@ -1922,6 +1926,8 @@ public：基类的公有成员成为派生类的公有成员；派生类的方�
 
 #### 构造函数
 
+如果基类有无参构造函数，那么可以不用显式调用，如果基类需要初始化，则必须显式调用
+
 类定义
 
 ```c++
@@ -1947,8 +1953,270 @@ RatedPlayer::RatedPlayer(unsigned int r, const string& fn, const string& ln, boo
     rating = r;
 }
 
-//拷贝g
+//拷贝构造基类
 RatedPlayer::RatedPlayer(unsigned int r, const TableTennisPlayer& tp) : TableTennisPlayer(tp), rating(r)
 {
 }
 ```
+
+
+
+### 重新定义基类的函数
+
+函数原型与基类完全一致
+
+```c++
+//重新定义基类函数
+void BrassPlus::ViewAcct(double amt) const
+{
+    //可以调用基类的函数
+    Brass::ViewAcct(amt);
+}
+```
+
+
+
+派生类重定义的函数覆盖了基类的同名函数，即对派生类对象调用这两个函数时，调用的是派生类重定义的函数
+
+
+
+### 多态与公有继承
+
+#### 多态 - 虚函数
+
+
+
+**virtual关键字**
+
+当基类指针指向的派生类对象，并对指针调用虚函数时，**会到派生类中去寻找同原型的函数并执行。如果不存在，则执行基类的函数**
+
+派生类中virtual可以不加，编译器默认**与基类虚函数同名的函数也是虚函数**
+
+
+
+构造函数不能是虚函数
+
+析构函数建议是虚函数，除非不会被当作基类使用
+
+虚函数具有继承性
+
+
+
+### protected成员
+
+一类特殊的私有成员，可以被派生类的成员函数访问，提高派生类成员函数访问基类数据成员的效率
+
+
+
+### 抽象基类
+
+#### 纯虚函数
+
+在基类中说明的虚函数，它在该基类中没有定义，但要在它的派生类里定义自己的版本，或重新说明为纯虚函数
+
+纯虚函数声明
+
+```c++
+virtual 类型 函数名(参数表) = 0;
+```
+
+如果一个类中至少有一个纯虚函数，则该类被称为抽象类
+
+
+
+抽象类只能作为基类，不能建立抽象类的对象
+
+可以声明指向抽象类的指针或引用，此指针可指向它的派生类，进而实现多态性
+
+抽象类不能用作参数类型、函数返回类型或显式转换类型
+
+如果派生类中给出了基类所有纯虚函数的实现，则该派生类不再是抽象类，否则仍为抽象类
+
+
+
+## C++中的代码重用
+
+
+
+### 包含对象成员的类
+
+对象成员的初始化由构造函数的初始化列表完成
+
+```c++
+//类定义中
+date birthday;
+
+//类声明中
+student(const string& n, int yy, int mm ,int dd): birthday(yy, mm, dd)
+{
+    name = n;
+	coursenum = 0;
+}
+```
+
+
+
+### 私有继承
+
+基类的公有成员和保护成员在派生类中都是私有成员
+
+即，基类的方法不再是派生类接口的一部分，但派生类的成员函数可以使用它们
+
+
+
+**与将对象作为成员的功能相同**
+
+成员对象：命名的对象
+
+私有继承：未命名的基类对象
+
+
+
+构造函数实现
+
+在派生类的构造函数中调用基类的构造函数
+
+```c++
+//通过私有继承的方式
+student(const string& n, int yy, int mm ,int dd): date(yy, mm, dd)
+{
+    name = n;
+	coursenum = 0;
+}
+```
+
+
+
+派生类可以直接强制转换为基类对象，相当于把基类部分抽取出来
+
+```c++
+//强制转换为基类
+date(student);
+```
+
+
+
+### 多重继承
+
+从多个基类派生
+
+格式
+
+```c++
+class 派生类名: 派生方法 基类名1, 派生方法 基类名2, ...{
+    ...
+};
+```
+
+
+
+#### 区分不同基类继承的同名函数
+
+在派生类中重新封装同名函数
+
+```c++
+class A{
+public:
+	void f();
+}
+
+class B {
+public:
+    void f();
+    void g();
+}
+
+class C: public A, public B {
+public:
+    void g();
+    void h();
+    void fA() { A::f(); }
+    void fB() { B::f(); }
+};
+```
+
+
+
+#### 从不同基类中继承了同一个类的多个实例
+
+```c++
+class people {
+    ...
+}
+class teacher: public people {
+    ...
+}
+class doctor: public people {
+    ...
+}
+
+class teacher_doctor: public teacher, public doctor {
+    ...
+}
+```
+
+没必要有两个people类的示例
+
+
+
+**通过 虚基类 解决**
+
+将多个类（共同基类）派生的对象只有一个基类对象
+
+共同派生时共享一个基类副本
+
+
+
+格式
+
+派生方法前加关键字virtual
+
+```c++
+class people {
+    ...
+}
+class teacher: virtual public people {
+    ...
+}
+class doctor: virtual public people {
+    ...
+}
+
+class teacher_doctor: public teacher, public doctor {
+    ...
+}
+```
+
+people是teacher和doctor的**虚基类**
+
+
+
+**虚基类由最终的派生类直接构造**
+
+teacher_doctor构造函数写法
+
+```c++
+teacher_doctor(参数表): people(参数表), teacher(参数表), doctor(参数表)
+{
+    ...
+}
+```
+
+
+
+### 类模板
+
+#### 定义及使用
+
+```c++
+template <typename T>
+class Sample {
+    Sample(const T& t);
+ 
+}
+
+//使用
+Sample<int> intSample(5);
+Sample<double> doubleSample(2.5);
+```
+
