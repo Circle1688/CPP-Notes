@@ -2208,11 +2208,16 @@ teacher_doctor(参数表): people(参数表), teacher(参数表), doctor(参数�
 
 #### 定义及使用
 
+头文件
+
 ```c++
 template <typename T>
 class Sample {
     Sample(const T& t);
- 
+    
+    T get() const;
+    
+    void set(T data);
 }
 
 //使用
@@ -2220,3 +2225,45 @@ Sample<int> intSample(5);
 Sample<double> doubleSample(2.5);
 ```
 
+源文件
+
+```c++
+template <typename T>
+Sample<T>::Sample(T)
+{
+}
+
+template <typename T>
+T Sample<T>::get() const
+{
+    return;
+}
+
+template <typename T>
+void Sample<T>::set(T) const
+{
+    ...
+}
+```
+
+
+
+#### 非类型参数
+
+类模板通常被用作容器
+
+```c++
+template<typename T, int N>
+class Sample {
+}
+
+Sample<int, 10> sample;		//实际参数一定是编译时的常量，比如10就是个常量
+```
+
+N为一个非类型模板参数
+
+实际参数一定是编译时的常量，不可用变量
+
+**只能是整型、枚举、指针类型**
+
+类方法中不能修改非类型参数值，也不能引用它的地址，引用传递是不允许的
